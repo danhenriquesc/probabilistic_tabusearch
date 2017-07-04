@@ -2,8 +2,11 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <set>
 #include <cstring>
 #include <cstdlib>
+
+#define DEBUG 1
 
 #define MAX_EDGES 100
 #define INFINITE 10000
@@ -25,10 +28,12 @@ int TABU_LIST_SIZE;
 int distances[MAX_EDGES][MAX_EDGES]; 
 int tabulist[MAX_EDGES][MAX_EDGES];
 
+vector< vector<int> > constraints;
+
 sol currentSolution(N), bestSolution(N), initialSolution(N), bestCandidate(N);
 int fitCurrentSolution, fitBestSolution, fitInitialSolution, fitBestCandidate;
 
-// ./main filename
+// ./main filename tabu_list_size
 int main(int argc, char* argv[])
 {
 
@@ -42,7 +47,6 @@ int main(int argc, char* argv[])
 	for(int i=0; i<4; i++)
 	{
 		getline(infile, line);
-		cout << line << endl;
 	}
 	getline(infile, line);
 	getline(infile, line);
@@ -53,17 +57,44 @@ int main(int argc, char* argv[])
 	istringstream iss(line);
 	iss >> N;
 	
-	// Reading distances
+	// Reading distances and constraints
+	// Constrains[N] = list of N elements that each one of N can't be before X
+	for(int i=0; i<N; i++)
+	{
+		vector<int> d_constraints;
+		constraints.push_back(d_constraints);
+	}
+
 	for(int i=0; i<N; i++)
 	{
 	 	getline(infile, line);
 	 	istringstream iss(line);
-    		
+
      	for(int j=0; j<N; j++)
      	{
-     		iss >> distances[i][j];    		
+     		iss >> distances[i][j];
+     		if(distances[i][j] == -1)
+     		{
+     			distances[i][j] = 0;
+     			constraints[j].push_back(i);
+     		}
      	}
 	}
+
+	// Debug contraints list
+	#if(DEBUG >= 1)
+		cout << "DEBUG LVL1 - DEBUGGING CONSTRAINTS" << endl;
+
+		for(int i=0; i < constraints.size(); i++)
+		{
+			cout << i << ":" << endl;
+			for(int j=0; j<constraints[i].size(); j++)
+	     	{
+	     		cout << constraints[i][j] << " | ";
+	     	}
+	     	cout << endl << endl;
+	    }
+	#endif
 
 	// Initializing Tabu List
 	memset(tabulist, -(TABU_LIST_SIZE+1), sizeof(tabulist));
@@ -89,7 +120,7 @@ int main(int argc, char* argv[])
 		t_i = -1;
 		t_j = -1;
 		for(int i=1;i<N-1;i++){
-			for(int j=i+1;j<N-1;j++){ //TODA VIZINHANÇA
+			for(int j=i+1;j<N-1;j++){ //All neighboorhood
 				fitMovement = fitness(move_opt2,currentSolution,fitCurrentSolution,i,j);
 
 				if ( 
@@ -97,7 +128,7 @@ int main(int argc, char* argv[])
 						(it - tabulist[i][j] > TABU_LIST_SIZE) && 
 						((first) || (fitMovement < fitBestCandidate))
 					) ||
-					fitMovement < fitBestSolution // Aspiração
+					fitMovement < fitBestSolution // aspiration criteria
 				)
 
 				{
@@ -123,15 +154,26 @@ int main(int argc, char* argv[])
 
 		it++;
 
-		cout << it << " | " << fitBestSolution << endl;
-		// cout << it << " | " << fitness(currentSolution) << endl;
-		// cout << it << " | " << fitness(bestCandidate) << endl;
-		//cout << t_i << "x" << t_j << endl;
-		//printSolution(bestCandidate);
+		#if(DEBUG >= 1)
+			cout << "DEBUG LVL1 - DEBUGGING BEST SOLUTION FITNESS" << endl;
+
+			cout << it << " | " << fitBestSolution << endl;
+
+		#endif
+
+		#if(DEBUG >= 2)
+			cout << "DEBUG LVL2 - DEBUGGING CURRENT SOLUTION AND BEST CANDIDATE" << endl;
+
+			cout << it << " | " << fitness(currentSolution) << endl;
+			cout << it << " | " << fitness(bestCandidate) << endl;
+			cout << t_i << "x" << t_j << endl;
+			printSolution(bestCandidate);
+
+		#endif
 	}
 
-	cout << "FINALIZADO" << endl;
-	cout << "CUSTO: " << fitBestSolution << endl;
+	cout << "FINISHED" << endl;
+	cout << "TOTAL COST: " << fitBestSolution << endl;
 	printSolution(bestSolution);
 
 	return 0;
@@ -161,27 +203,23 @@ void printSolution(sol S){
 
 int fitness(sol S){
 	int cost = 0;
+	set<int> already;
 
+	//Movements costs
 	for(int i=0; i<N-1; i++)
 	{
-		if(distances[S[i]][S[i+1]] == -1)
-		{
-     		cost += INFINITE;
-		} 
-		else
-		{
-			cost += distances[S[i]][S[i+1]];
-		}
+		cost += distances[S[i]][S[i+1]];
 	}
 
-	for(int i=0; i<N-2; i++)
+	//Constraints costs
+	for(int i=0; i<N; i++)
 	{
-		for(int j=i+2; j<N; j++)
+		already.insert(S[i]);
+
+		for(int j=0; j<constraints[S[i]].size(); j++)
 		{
-			if(distances[S[i]][S[j]] == -1)
-			{
-     			cost += INFINITE;
-			}
+			if(already.count(constraints[S[i]][j]) != 0)
+				cost += INFINITE;
 		}
 	}
 
@@ -201,7 +239,7 @@ int fitness(Movement move,sol S,int fit,int i,int j){
 
 			break;
 		default:
-			cout << "MOVIMENTO INVALIDO" << endl;
+			cout << "INVALID MOVEMENT" << endl;
 	}
 	
 	return cost;
