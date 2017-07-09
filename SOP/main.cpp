@@ -54,11 +54,12 @@ unsigned int hash13(sol);
 class Historic
 {
 	public:
-		queue<unsigned int[13]> elements;
+		queue<unsigned int*> elements;
 		int maxElements;
 };
 
 Historic probabilisticTabuList;
+int BLOOM_FILTER_BITS;
 
 unsigned int countingBloomFilter[13][MAX_EDGES];
 bool isInBloomFilter(sol S)
@@ -83,7 +84,7 @@ bool isInBloomFilter(sol S)
 
 	for(int i = 0; i < 13; i++)
 	{
-		if(hash[i] == 0)
+		if(countingBloomFilter[i][ hash[i] ] == 0)
 		{
 			isInFilter = false;
 			break;
@@ -92,8 +93,21 @@ bool isInBloomFilter(sol S)
 
 	return isInFilter;
 }
+
+void removeFromBloomFilter(unsigned int* hash)
+{
+	cout << "REMOVED FROM BLOOM FILTER: " << endl;
+	for(int i = 0; i < 13; i++)
+	{
+		countingBloomFilter[i][ hash[i] ]--;
+		cout << hash[i] << " ";
+	}
+	cout << endl;
+}
+
 void addToBloomFilter(sol S){
-	unsigned int hash[13];
+	unsigned int* hash;
+	hash = new unsigned int[13];
 
 	hash[0] = hash1(S);
 	hash[1] = hash2(S);
@@ -116,10 +130,33 @@ void addToBloomFilter(sol S){
 
 	probabilisticTabuList.elements.push(hash);
 
+	cout << "ADDED TO BLOOM FILTER: " << endl;
+	for(int i = 0; i < 13; i++){
+		cout << hash[i] << " ";
+	}
+	cout << endl;
+
 	if(probabilisticTabuList.elements.size() > probabilisticTabuList.maxElements)
 	{
-		cout << probabilisticTabuList.elements.front()[1];
+		unsigned int* front;
+		front = probabilisticTabuList.elements.front();
+		
 		probabilisticTabuList.elements.pop();
+
+		removeFromBloomFilter(front);
+	}
+
+	cout << "BLOOM FILTER STATUS: " << endl;
+	for(int i = 0; i < BLOOM_FILTER_BITS; i++){
+		cout << setw(4) << i << " ";
+	}
+	cout << endl;
+
+	for(int i = 0; i < 13; i++){
+		for(int j = 0; j < BLOOM_FILTER_BITS; j++){
+			cout << setw(4) << countingBloomFilter[i][j] << " ";
+		}
+		cout << endl;
 	}
 }
 
@@ -187,7 +224,9 @@ int main(int argc, char* argv[])
 
 	// Initializing Probabilistic Tabu List
 	probabilisticTabuList.maxElements = TABU_LIST_SIZE;
-	memset(countingBloomFilter, 0, sizeof(unsigned int) * 13 * MAX_EDGES);
+	BLOOM_FILTER_BITS = 13 * TABU_LIST_SIZE;
+
+	memset(countingBloomFilter, 0, sizeof(unsigned int) * 13 * BLOOM_FILTER_BITS);
 
 	// Initializing Tabu List
 	memset(tabulist, -(TABU_LIST_SIZE+1), sizeof(tabulist));
@@ -363,7 +402,7 @@ unsigned int hash1(sol S){
 		hash += (S[i]*(i+1));
 	}
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -376,7 +415,7 @@ unsigned int hash2(sol S){
 		hash += pow(S[i], (i+1));
 	}
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -389,7 +428,7 @@ unsigned int hash3(sol S){
 		hash += (S[i] % (i+1));
 	}
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -400,7 +439,7 @@ unsigned int hash4(sol S)
 
 	hash = ((hash1(S) * hash3(S)) % 12 ) * 3;
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -414,7 +453,7 @@ unsigned int hash5(sol S)
 		hash += (S[i] % S[i+1]);
 	}
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -428,7 +467,7 @@ unsigned int hash6(sol S)
 		hash += S[i+1] % (S[i] + 1);
 	}
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -437,9 +476,9 @@ unsigned int hash7(sol S)
 {
 	unsigned long int hash = 0;
 
-	hash = ( hash1(S) % hash3(S) ) * ( hash2(S) + ( hash2(S) % 3 ) + 312);
+	hash = ( hash1(S) % (hash3(S)+1) ) * ( hash2(S) + ( hash2(S) % 3 ) + 312);
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -451,7 +490,7 @@ unsigned int hash8(sol S)
 	hash = hash1(S) + hash2(S) + hash3(S) + hash4(S);
 	hash = ( hash * 4 ) % (hash5(S) + 1);
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -464,7 +503,7 @@ unsigned int hash9(sol S)
 	hash = hash1(S) * hash2(S) + hash3(S) * hash4(S);
 	hash = ( hash * hash8(S) ) + hash5(S);
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -476,7 +515,7 @@ unsigned int hash10(sol S)
 	hash = pow(hash1(S), 12) + hash5(S) + (hash3(S) % 4) * 12;
 	hash = ( hash + hash8(S) ) % hash5(S);
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -488,7 +527,7 @@ unsigned int hash11(sol S)
 	hash = hash10(S) + hash2(S) + 79;
 	hash = hash % ( hash8(S) + 1 ) * 2;
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -500,7 +539,7 @@ unsigned int hash12(sol S)
 	hash = (hash5(S) + hash6(S))*5 + hash11(S) + hash9(S)*3;
 	hash = hash + hash2(S) + hash3(S);
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
@@ -512,7 +551,7 @@ unsigned int hash13(sol S)
 	hash = hash11(S) % ( hash3(S) + 1 );
 	hash = ( hash + hash7(S) )*22 + hash9(S)*64;
 
-	hash = hash % TABU_LIST_SIZE;
+	hash = hash % BLOOM_FILTER_BITS;
 
 	return hash;
 }
