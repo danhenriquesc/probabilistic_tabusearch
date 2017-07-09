@@ -13,6 +13,7 @@
 
 #define MAX_EDGES 750
 #define INFINITE 10000
+#define MAX_BLOOM_FILTER_BITS 13000
 
 enum Movement {move_opt2};
 
@@ -61,7 +62,7 @@ class Historic
 Historic probabilisticTabuList;
 int BLOOM_FILTER_BITS;
 
-unsigned int countingBloomFilter[13][MAX_EDGES];
+unsigned int countingBloomFilter[13][MAX_BLOOM_FILTER_BITS];
 bool isInBloomFilter(sol S)
 {
 	unsigned int hash[13];
