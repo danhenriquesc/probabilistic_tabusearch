@@ -96,11 +96,17 @@ bool isInBloomFilter(sol S)
 
 void removeFromBloomFilter(unsigned int* hash)
 {
-	cout << "REMOVED FROM BLOOM FILTER: " << endl;
+	#if(DEBUG >= 2)
+		cout << "REMOVED FROM BLOOM FILTER: " << endl;
+
+	#endif
+
 	for(int i = 0; i < 13; i++)
 	{
 		countingBloomFilter[i][ hash[i] ]--;
-		cout << hash[i] << " ";
+		#if(DEBUG >= 2)
+			cout << hash[i] << " ";
+		#endif
 	}
 	cout << endl;
 }
@@ -130,11 +136,13 @@ void addToBloomFilter(sol S){
 
 	probabilisticTabuList.elements.push(hash);
 
-	cout << "ADDED TO BLOOM FILTER: " << endl;
-	for(int i = 0; i < 13; i++){
-		cout << hash[i] << " ";
-	}
-	cout << endl;
+	#if(DEBUG >= 2)
+		cout << "ADDED TO BLOOM FILTER: " << endl;
+		for(int i = 0; i < 13; i++){
+			cout << hash[i] << " ";
+		}
+		cout << endl;
+	#endif
 
 	if(probabilisticTabuList.elements.size() > probabilisticTabuList.maxElements)
 	{
@@ -144,20 +152,24 @@ void addToBloomFilter(sol S){
 		probabilisticTabuList.elements.pop();
 
 		removeFromBloomFilter(front);
+		free(front);
 	}
 
-	cout << "BLOOM FILTER STATUS: " << endl;
-	for(int i = 0; i < BLOOM_FILTER_BITS; i++){
-		cout << setw(4) << i << " ";
-	}
-	cout << endl;
-
-	for(int i = 0; i < 13; i++){
-		for(int j = 0; j < BLOOM_FILTER_BITS; j++){
-			cout << setw(4) << countingBloomFilter[i][j] << " ";
+	#if(DEBUG >= 2)
+		cout << "BLOOM FILTER STATUS: " << endl;
+		for(int i = 0; i < BLOOM_FILTER_BITS; i++){
+			cout << setw(4) << i << " ";
 		}
 		cout << endl;
-	}
+
+
+		for(int i = 0; i < 13; i++){
+			for(int j = 0; j < BLOOM_FILTER_BITS; j++){
+				cout << setw(4) << countingBloomFilter[i][j] << " ";
+			}
+			cout << endl;
+		}
+	#endif
 }
 
 // ./main filename tabu_list_size
@@ -238,6 +250,7 @@ int main(int argc, char* argv[])
 	int it = 0;
 	int t_i, t_j;
 	int fitMovement;
+	sol movementSolution;
 	bool first;
 
 	currentSolution = initialSolution;
@@ -249,15 +262,17 @@ int main(int argc, char* argv[])
 		first = true; //bestCandidate = NULL
 		fitBestCandidate = 1000000;
 
-		t_i = -1;
-		t_j = -1;
+		// t_i = -1;
+		// t_j = -1;
 		for(int i=1;i<N-1;i++){
 			for(int j=i+1;j<N-1;j++){ //All neighboorhood
-				fitMovement = fitness(move_opt2,currentSolution,fitCurrentSolution,i,j);
+				movementSolution = opt2(currentSolution, i, j);
+				fitMovement = fitness(movementSolution);
+				//fitMovement = fitness(move_opt2,currentSolution,fitCurrentSolution,i,j);
 
 				if ( 
 					(
-						(it - tabulist[i][j] > TABU_LIST_SIZE) && 
+						(!isInBloomFilter(movementSolution)) && 
 						((first) || (fitMovement < fitBestCandidate))
 					) ||
 					fitMovement < fitBestSolution // aspiration criteria
@@ -265,10 +280,10 @@ int main(int argc, char* argv[])
 
 				{
 					first = false;
-					bestCandidate = opt2(currentSolution,i,j);
-					fitBestCandidate = fitness(bestCandidate);
-					t_i = i;
-					t_j = j;
+					bestCandidate = movementSolution;
+					fitBestCandidate = fitMovement;
+					// t_i = i;
+					// t_j = j;
 				}
 			}
 		}
@@ -281,8 +296,9 @@ int main(int argc, char* argv[])
 			fitBestSolution = fitBestCandidate;
 		}
 
-		tabulist[t_j][t_i] = it;
-		tabulist[t_i][t_j] = it;
+		// tabulist[t_j][t_i] = it;
+		// tabulist[t_i][t_j] = it;
+		addToBloomFilter(bestCandidate);
 
 		it++;
 
@@ -513,7 +529,7 @@ unsigned int hash10(sol S)
 	unsigned long int hash = 0;
 
 	hash = pow(hash1(S), 12) + hash5(S) + (hash3(S) % 4) * 12;
-	hash = ( hash + hash8(S) ) % hash5(S);
+	hash = ( hash + hash8(S) ) % (hash5(S)+1);
 
 	hash = hash % BLOOM_FILTER_BITS;
 
