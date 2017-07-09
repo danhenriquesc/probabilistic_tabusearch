@@ -5,10 +5,13 @@
 #include <set>
 #include <cstring>
 #include <cstdlib>
+#include <queue>
+#include <cmath>
+#include <iomanip>
 
 #define DEBUG 1
 
-#define MAX_EDGES 100
+#define MAX_EDGES 750
 #define INFINITE 10000
 
 enum Movement {move_opt2};
@@ -33,10 +36,96 @@ vector< vector<int> > constraints;
 sol currentSolution(N), bestSolution(N), initialSolution(N), bestCandidate(N);
 int fitCurrentSolution, fitBestSolution, fitInitialSolution, fitBestCandidate;
 
+//Counting Bloom Filter
+unsigned int hash1(sol);
+unsigned int hash2(sol);
+unsigned int hash3(sol);
+unsigned int hash4(sol);
+unsigned int hash5(sol);
+unsigned int hash6(sol);
+unsigned int hash7(sol);
+unsigned int hash8(sol);
+unsigned int hash9(sol);
+unsigned int hash10(sol);
+unsigned int hash11(sol);
+unsigned int hash12(sol);
+unsigned int hash13(sol);
+
+class Historic
+{
+	public:
+		queue<unsigned int[13]> elements;
+		int maxElements;
+};
+
+Historic probabilisticTabuList;
+
+unsigned int countingBloomFilter[13][MAX_EDGES];
+bool isInBloomFilter(sol S)
+{
+	unsigned int hash[13];
+
+	hash[0] = hash1(S);
+	hash[1] = hash2(S);
+	hash[2] = hash3(S);
+	hash[3] = hash4(S);
+	hash[4] = hash5(S);
+	hash[5] = hash6(S);
+	hash[6] = hash7(S);
+	hash[7] = hash8(S);
+	hash[8] = hash9(S);
+	hash[9] = hash10(S);
+	hash[10] = hash11(S);
+	hash[11] = hash12(S);
+	hash[12] = hash13(S);
+
+	bool isInFilter = true;
+
+	for(int i = 0; i < 13; i++)
+	{
+		if(hash[i] == 0)
+		{
+			isInFilter = false;
+			break;
+		}
+	}
+
+	return isInFilter;
+}
+void addToBloomFilter(sol S){
+	unsigned int hash[13];
+
+	hash[0] = hash1(S);
+	hash[1] = hash2(S);
+	hash[2] = hash3(S);
+	hash[3] = hash4(S);
+	hash[4] = hash5(S);
+	hash[5] = hash6(S);
+	hash[6] = hash7(S);
+	hash[7] = hash8(S);
+	hash[8] = hash9(S);
+	hash[9] = hash10(S);
+	hash[10] = hash11(S);
+	hash[11] = hash12(S);
+	hash[12] = hash13(S);
+
+	for(int i = 0; i < 13; i++)
+	{
+		countingBloomFilter[i][ hash[i] ]++;
+	}
+
+	probabilisticTabuList.elements.push(hash);
+
+	if(probabilisticTabuList.elements.size() > probabilisticTabuList.maxElements)
+	{
+		cout << probabilisticTabuList.elements.front()[1];
+		probabilisticTabuList.elements.pop();
+	}
+}
+
 // ./main filename tabu_list_size
 int main(int argc, char* argv[])
 {
-
 	// Loading input file
 	string filename = argv[1];
 	TABU_LIST_SIZE = atoi(argv[2]);
@@ -95,6 +184,10 @@ int main(int argc, char* argv[])
 	     	cout << endl << endl;
 	    }
 	#endif
+
+	// Initializing Probabilistic Tabu List
+	probabilisticTabuList.maxElements = TABU_LIST_SIZE;
+	memset(countingBloomFilter, 0, sizeof(unsigned int) * 13 * MAX_EDGES);
 
 	// Initializing Tabu List
 	memset(tabulist, -(TABU_LIST_SIZE+1), sizeof(tabulist));
@@ -260,4 +353,166 @@ sol opt2(sol S, int i, int j){
 	}
 
 	return S;
+}
+
+unsigned int hash1(sol S){
+	unsigned long int hash = 0;
+
+	for(int i = 0; i<N; i++)
+	{
+		hash += (S[i]*(i+1));
+	}
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash2(sol S){
+	unsigned long int hash = 0;
+
+	for(int i = 0; i<N; i++)
+	{
+		hash += pow(S[i], (i+1));
+	}
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash3(sol S){
+	unsigned long int hash = 0;
+
+	for(int i = 0; i<N; i++)
+	{
+		hash += (S[i] % (i+1));
+	}
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash4(sol S)
+{
+	unsigned long int hash = 0;
+
+	hash = ((hash1(S) * hash3(S)) % 12 ) * 3;
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash5(sol S)
+{
+	unsigned long int hash = 0;
+
+	for(int i = 0; i<N-1; i++)
+	{
+		hash += (S[i] % S[i+1]);
+	}
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash6(sol S)
+{
+	unsigned long int hash = 0;
+
+	for(int i = 0; i < N-1; i++)
+	{
+		hash += S[i+1] % (S[i] + 1);
+	}
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash7(sol S)
+{
+	unsigned long int hash = 0;
+
+	hash = ( hash1(S) % hash3(S) ) * ( hash2(S) + ( hash2(S) % 3 ) + 312);
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash8(sol S)
+{
+	unsigned long int hash = 0;
+
+	hash = hash1(S) + hash2(S) + hash3(S) + hash4(S);
+	hash = ( hash * 4 ) % (hash5(S) + 1);
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+
+unsigned int hash9(sol S)
+{
+	unsigned long int hash = 0;
+
+	hash = hash1(S) * hash2(S) + hash3(S) * hash4(S);
+	hash = ( hash * hash8(S) ) + hash5(S);
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash10(sol S)
+{
+	unsigned long int hash = 0;
+
+	hash = pow(hash1(S), 12) + hash5(S) + (hash3(S) % 4) * 12;
+	hash = ( hash + hash8(S) ) % hash5(S);
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash11(sol S)
+{
+	unsigned long int hash = 0;
+
+	hash = hash10(S) + hash2(S) + 79;
+	hash = hash % ( hash8(S) + 1 ) * 2;
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash12(sol S)
+{
+	unsigned long int hash = 0;
+
+	hash = (hash5(S) + hash6(S))*5 + hash11(S) + hash9(S)*3;
+	hash = hash + hash2(S) + hash3(S);
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
+}
+
+unsigned int hash13(sol S)
+{
+	unsigned long int hash = 0;
+
+	hash = hash11(S) % ( hash3(S) + 1 );
+	hash = ( hash + hash7(S) )*22 + hash9(S)*64;
+
+	hash = hash % TABU_LIST_SIZE;
+
+	return hash;
 }
