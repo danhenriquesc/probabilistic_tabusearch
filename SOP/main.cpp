@@ -97,7 +97,7 @@ bool isInBloomFilter(sol S)
 
 void removeFromBloomFilter(unsigned int* hash)
 {
-	#if(DEBUG >= 2)
+	#if(DEBUG >= 3)
 		cout << "REMOVED FROM BLOOM FILTER: " << endl;
 
 	#endif
@@ -137,7 +137,7 @@ void addToBloomFilter(sol S){
 
 	probabilisticTabuList.elements.push(hash);
 
-	#if(DEBUG >= 2)
+	#if(DEBUG >= 3)
 		cout << "ADDED TO BLOOM FILTER: " << endl;
 		for(int i = 0; i < 13; i++){
 			cout << hash[i] << " ";
@@ -156,7 +156,7 @@ void addToBloomFilter(sol S){
 		free(front);
 	}
 
-	#if(DEBUG >= 2)
+	#if(DEBUG >= 3)
 		cout << "BLOOM FILTER STATUS: " << endl;
 		for(int i = 0; i < BLOOM_FILTER_BITS; i++){
 			cout << setw(4) << i << " ";
@@ -271,6 +271,7 @@ int main(int argc, char* argv[])
 				fitMovement = fitness(movementSolution);
 				//fitMovement = fitness(move_opt2,currentSolution,fitCurrentSolution,i,j);
 
+				// cout << fitMovement << " - " << fitBestCandidate << endl;
 				if ( 
 					(
 						(!isInBloomFilter(movementSolution)) && 
