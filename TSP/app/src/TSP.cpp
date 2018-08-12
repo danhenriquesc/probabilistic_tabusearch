@@ -2,8 +2,9 @@
 #define PTS_TSP_H_
 
 #include <iostream>
-
 #include <sstream>
+#include <cmath>
+
 #include "TSP.hpp"
 #include "City.hpp"
 #include "Logger.hpp"
@@ -23,6 +24,8 @@ namespace ProbabilisticTabuSearch
     instanceFilename = TSPLIB_FILES_PATH + filename;
     ReadFile();
     PrintCities();
+    CalculateDistances();
+    PrintDistances();
   }
 
   // PRIVATE
@@ -71,6 +74,34 @@ namespace ProbabilisticTabuSearch
     }
   }
 
+
+
+  void TSP::CalculateDistances()
+  {
+    for(int i = 1; i <= numberOfCities; i++)
+    {
+      for(int j = 1; j <= numberOfCities; j++)
+      {
+        distances[i][j] = Distance(cities[i], cities[j]);
+      }
+    }
+  }
+
+  double TSP::Distance(ProbabilisticTabuSearch::City* c1, ProbabilisticTabuSearch::City* c2)
+  {
+    return Nint(
+      sqrt(
+        pow(c1->x - c2->x, 2) + 
+        pow(c1->y - c2->y, 2)
+      )
+    );
+  }
+
+  int TSP::Nint(double x)
+  {
+    return (int)(x + 0.5);
+  }
+
   void TSP::PrintCities()
   {
     for(int i = 1; i <= numberOfCities; i++)
@@ -80,6 +111,21 @@ namespace ProbabilisticTabuSearch
         ("ID #" + to_string(i) + " | X: " + to_string(cities[i]->x) +  " | Y: " + to_string(cities[i]->y)),
         ProbabilisticTabuSearch::Logger::DEBUG
       );
+    }
+  }
+
+  void TSP::PrintDistances()
+  {
+    for(int i = 1; i <= numberOfCities; i++)
+    {
+      for(int j = i + 1; j <= numberOfCities; j++)
+      {
+        ProbabilisticTabuSearch::Logger::Log(
+          "Print Distance",
+          ("Distance of #" + to_string(i) + " to " + to_string(j) +  " is " + to_string(distances[i][j])),
+          ProbabilisticTabuSearch::Logger::DEBUG
+        );
+      }
     }
   }
 }

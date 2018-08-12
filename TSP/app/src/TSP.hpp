@@ -18,9 +18,14 @@ namespace ProbabilisticTabuSearch
       ifstream file;
       ProbabilisticTabuSearch::City *cities[MAX_CITIES];
       int numberOfCities;
+      float distances[MAX_CITIES][MAX_CITIES];
 
       void ReadFile();
       void ClearFileHeader();
       void PrintCities();
+      int Nint(double x);
+      double Distance(ProbabilisticTabuSearch::City*, ProbabilisticTabuSearch::City*);
+      void CalculateDistances();
+      void PrintDistances();
   };
 }
